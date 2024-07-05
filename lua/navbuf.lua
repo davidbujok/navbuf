@@ -2,6 +2,7 @@ local M = {}
 
 local popup = require("plenary.popup")
 local buffer_list = {}
+local bufferStrings = {}
 local Win_id
 
 -- Extract file names from a given mark
@@ -31,11 +32,18 @@ function M.getAllCapitalMarks()
     return capitalLetters
 end
 
+function M.getAllBufferMarks()
+    local letters = {}
+
+    for i = 97, 122 do
+        table.insert(letters, string.char(i))
+    end
+    return letters
+end
+
 -- Insert the filename into bufferlist
 function InsertModifiedFilenameIntoBuffer(mark, fileName)
-
-    local modifiedString = mark .. "   " .. fileName
-    table.insert(buffer_list, modifiedString)
+    buffer_list[mark] = fileName
 end
 
 function M.loadFileNamesForCapitalMarks()
@@ -62,6 +70,60 @@ function M.PopulateBufferList()
     end
 end
 
+function M.FindBufferMarks(last_buf, bufferStrings)
+    local bufferMarks = M.getAllBufferMarks()
+
+    for _, mark in ipairs(bufferMarks) do
+        local bufferMark = vim.api.nvim_buf_get_mark(last_buf, mark)
+        if bufferMark[1] ~= 0 then
+            local marktext = vim.api.nvim_buf_get_lines(last_buf, bufferMark[1] - 1, bufferMark[1], false)
+            local stripSpace = marktext[1]:gsub("^%s*", "")
+            local bufferMarkString = mark .. " " .. stripSpace
+            table.insert(bufferStrings, bufferMarkString)
+        end
+    end
+
+    --
+end
+
+function M.bufferListToStrings(buffer_list, last_buf)
+    local bufferStrings = {}
+    for mark, fileName in pairs(buffer_list) do
+        local str = mark .. " " .. fileName
+        table.insert(bufferStrings, str)
+    end
+    table.insert(bufferStrings, "------------------------------------------")
+
+    M.FindBufferMarks(last_buf, bufferStrings)
+
+    return bufferStrings
+end
+
+function M.bufferMarksToKeymaps(bufnr, last_buf)
+    local startOfBufMarks
+    bufnr = tonumber(bufnr)
+    print(bufnr)
+
+    if type(bufnr) ~= "number" then
+        return
+    end
+
+    for index, line in ipairs(bufferStrings) do
+        if string.sub(line, 1, 1) == "-" then
+            startOfBufMarks = index + 1
+            break
+        end
+    end
+
+    for i = startOfBufMarks, #bufferStrings do
+        local mark = string.sub(bufferStrings[i], 1, 1)
+        local cmd = string.format(":lua GoToMarkInBuffer('%s', %d)<CR>", mark, last_buf)
+        local lhs = mark
+        print(lhs)
+        vim.api.nvim_buf_set_keymap(bufnr, 'n', lhs, cmd, { noremap = true, silent = true })
+    end
+
+end
 
 -- Show popup menu
 function ShowMenu(buffer_list, last_buf)
@@ -76,16 +138,21 @@ function ShowMenu(buffer_list, last_buf)
     local col = math.floor((win_width - curr_width) / 2)
     local line = win_height - height
 
-    Win_id = popup.create(buffer_list, {
+
+    bufferStrings = M.bufferListToStrings(buffer_list, last_buf)
+
+    Win_id = popup.create(bufferStrings, {
         pos = "center",
         minwidth = curr_width,
         minheight = height,
         col = col + 1,
         line = line,
     })
-    local bufnr = vim.api.nvim_win_get_buf(Win_id)
 
-    for _, value in ipairs(buffer_list) do
+    local bufnr = vim.api.nvim_win_get_buf(Win_id)
+    -- M.bufferMarksToKeymaps(bufferStrings, bufnr)
+
+    for _, value in ipairs(bufferStrings) do
         local mark = string.sub(value, 1, 1)
         local capitalMark = string.upper(mark)
         local cmd = string.format(":lua SwitchBuffer('%s', '%d')<CR>", capitalMark, bufnr)
@@ -93,15 +160,50 @@ function ShowMenu(buffer_list, last_buf)
         vim.api.nvim_buf_set_keymap(bufnr, 'n', lhs, cmd, { noremap = true, silent = true })
     end
 
+    local cmdSwitchToBufMarks = string.format(":lua SwitchToBufMarks(%d, %d)<CR>", bufnr, last_buf)
+
     local cmd = string.format("<CMD>lua CloseMenu()<CR>")
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "q", cmd, { silent = false, desc = "Quit"} )
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "<ESC>", cmd, { silent = false, desc = "Quit"} )
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "q", cmd, { silent = false, desc = "Quit" })
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "D", "<CMD>delete<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "J", "<CMD>:+1<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "K", "<CMD>:-1<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-N>", "<CMD>:+1<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-P>", "<CMD>:-1<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "<ESC>", cmd, { silent = false, desc = "Quit" })
+    vim.api.nvim_buf_set_keymap(bufnr, "n", "'", cmdSwitchToBufMarks, { silent = false })
+end
+
+function SwitchToBufMarks(bufnr, last_buf)
+    M.bufferMarksToKeymaps(bufnr, last_buf)
 end
 
 -- Close popup menu
 function CloseMenu()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local lineCount = vim.api.nvim_buf_line_count(bufnr)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, lineCount, false)
+
+    local function bufferStringsToMarks()
+        local marksLeft = {}
+        for _, line in ipairs(lines) do
+            if string.sub(line, 1, 1) ~= "-" then
+                local mark = string.sub(line, 1, 1)
+                marksLeft[mark] = true
+            end
+        end
+        return marksLeft
+    end
+
+    local marksLeft = bufferStringsToMarks()
+    for mark in pairs(buffer_list) do
+        if not marksLeft[mark] then
+            buffer_list[mark] = nil
+            local upperMark = string.upper(mark)
+            vim.api.nvim_del_mark(upperMark)
+        end
+    end
+
     vim.api.nvim_win_close(Win_id, true)
-    P(buffer_list)
 end
 
 -- Switch Buffers
@@ -112,6 +214,14 @@ function SwitchBuffer(mark, last_buf)
     end
     vim.api.nvim_win_close(Win_id, true)
     edit()
+end
+
+function GoToMarkInBuffer(mark, last_buf)
+    local markLine = vim.api.nvim_buf_get_mark(last_buf, mark)
+    vim.api.nvim_win_close(Win_id, true)
+    local win_id = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_cursor(win_id, {markLine[1], markLine[2]})
+    P(markLine)
 end
 
 -- Start Plugin
