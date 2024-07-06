@@ -2,6 +2,7 @@ local M = {}
 
 local popup = require("plenary.popup")
 local utils = require("navbuf.utils")
+local bufwindow = require("navbuf.bufwindow")
 local buffer_list = {}
 local bufferStrings = {}
 local Win_id
@@ -36,7 +37,6 @@ end
 function M.bufferMarksToKeymaps(bufnr, last_buf)
     local startOfBufMarks
     bufnr = tonumber(bufnr)
-    print(bufnr)
 
     if type(bufnr) ~= "number" then
         return
@@ -53,7 +53,6 @@ function M.bufferMarksToKeymaps(bufnr, last_buf)
         local mark = string.sub(bufferStrings[i], 1, 1)
         local cmd = string.format(":lua GoToMarkInBuffer('%s', %d)<CR>", mark, last_buf)
         local lhs = mark
-        print(lhs)
         vim.api.nvim_buf_set_keymap(bufnr, 'n', lhs, cmd, { noremap = true, silent = true })
     end
 end
@@ -77,7 +76,6 @@ function CloseMenu()
                 marksLeft[mark] = true
             end
         end
-        P(marksLeft)
         return marksLeft
     end
 
@@ -108,35 +106,13 @@ function GoToMarkInBuffer(mark, last_buf)
     vim.api.nvim_win_close(Win_id, true)
     local win_id = vim.api.nvim_get_current_win()
     vim.api.nvim_win_set_cursor(win_id, { markLine[1], markLine[2] })
-    P(markLine)
 end
 
 -- Show popup menu
 function ShowMenu(buffer_list, last_buf)
     bufferStrings = M.bufferListToStrings(buffer_list, last_buf)
 
-    local height = 10
-
-    -- Get the dimensions of the current Neovim window
-    local win_width = vim.api.nvim_get_option_value('columns', {})
-    local win_height = vim.api.nvim_get_option_value('lines', {})
-    local curr_width = vim.api.nvim_win_get_width(0)
-
-    -- Calculate the center position
-    local col = math.floor((win_width - curr_width) / 2)
-    local line = win_height - height
-
-
-
-    Win_id = popup.create(bufferStrings, {
-        pos = "center",
-        padding = { 0, 0, 0, 10 },
-        minwidth = curr_width,
-        minheight = height,
-        col = col + 1,
-        line = line,
-    })
-    print("PRINT: ", Win_id)
+    Win_id = bufwindow.createWindowPopup(bufferStrings)
     local bufnr = vim.api.nvim_win_get_buf(Win_id)
 
     utils.generateCapitalMappings(bufferStrings, bufnr)
