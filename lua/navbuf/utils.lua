@@ -48,7 +48,8 @@ end
 
 function utils.generateCapitalMappings(bufferStrings, bufnr)
     for _, value in ipairs(bufferStrings) do
-        local mark = string.sub(value, 1, 1)
+        local stripSpace = value:gsub("^%s*", "")
+        local mark = string.sub(stripSpace, 1, 1)
         local capitalMark = string.upper(mark)
         local cmd = string.format(":lua SwitchBuffer('%s', '%d')<CR>", capitalMark, bufnr)
         local lhs = mark

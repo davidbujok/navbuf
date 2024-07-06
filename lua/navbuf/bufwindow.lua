@@ -21,7 +21,8 @@ function bufwindow.createWindowPopup(bufferStrings)
         col = col + 1,
         line = line,
     })
-    return Win_id
+    local bufnr = vim.api.nvim_win_get_buf(Win_id)
+    return { Win_id, bufnr }
 end
 
 return bufwindow

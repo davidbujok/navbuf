@@ -112,8 +112,9 @@ end
 function ShowMenu(buffer_list, last_buf)
     bufferStrings = M.bufferListToStrings(buffer_list, last_buf)
 
-    Win_id = bufwindow.createWindowPopup(bufferStrings)
-    local bufnr = vim.api.nvim_win_get_buf(Win_id)
+    local ids = bufwindow.createWindowPopup(bufferStrings)
+    Win_id = ids[1]
+    local bufnr = ids[2]
 
     utils.generateCapitalMappings(bufferStrings, bufnr)
 
