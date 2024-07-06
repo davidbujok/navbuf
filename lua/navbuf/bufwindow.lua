@@ -12,8 +12,10 @@ function bufwindow.createWindowPopup(bufferStrings)
     -- Calculate the center position
     local col = math.floor((win_width - curr_width) / 2)
     local line = win_height - height
-    local Win_id = popup.create(bufferStrings, {
+
+    Win_id = popup.create(bufferStrings, {
         pos = "center",
+        padding = { 0, 0, 0, 10 },
         minwidth = curr_width,
         minheight = height,
         col = col + 1,
