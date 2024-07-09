@@ -57,4 +57,62 @@ function utils.generateCapitalMappings(bufferStrings, bufnr)
     end
 end
 
+function utils.getAllPathsCapitalMarks(lastBuf)
+    local lastBufPath = vim.api.nvim_buf_get_name(lastBuf)
+    local capitalMarks = utils.getAllCapitalMarks()
+    local paths = {}
+    for _, mark in ipairs(capitalMarks) do
+        local path = vim.api.nvim_get_mark(mark, {})[4]
+        local expanded_rel_path = vim.fn.expand(path)
+        if expanded_rel_path then
+            paths[expanded_rel_path] = mark
+        end
+    end
+
+    local lastFile
+    if paths[lastBufPath] then
+        lastFile = string.lower(paths[lastBufPath])
+    end
+    return lastFile
+end
+
+function utils.nextMark(bufferStrings, lastBuf)
+    vim.api.nvim_command("+1")
+    local lineMark = vim.api.nvim_get_current_line()
+    local stripSpace = lineMark:gsub("^%s*", "")
+    local mark = stripSpace:sub(1, 1)
+    local markTable = vim.api.nvim_get_mark(string.upper(mark), {})
+    local bufferMarks = utils.getAllBufferMarks()
+
+    local removeFromHere = false
+    local indexStart
+    for index, line in ipairs(bufferStrings) do
+        local stripSpaceLine = line:gsub("^%s*", "")
+        if removeFromHere then
+            table.remove(bufferStrings, index)
+        end
+        if string.sub(stripSpaceLine, 1, 1) == "-" then
+            removeFromHere = true
+            indexStart = index
+        end
+    end
+    removeFromHere = false
+
+    local localToFileMark = {}
+    for _, markB in ipairs(bufferMarks) do
+        local bufferMark = vim.api.nvim_buf_get_mark(markTable[3], markB)
+        if bufferMark[1] ~= 0 then
+            local marktext = vim.api.nvim_buf_get_lines(lastBuf, bufferMark[1] - 1, bufferMark[1], false)
+            local stripSpace2 = marktext[1]:gsub("^%s*", "")
+            local bufferMarkString = markB .. " " .. stripSpace2
+            table.insert(localToFileMark, bufferMarkString)
+        end
+    end
+    vim.api.nvim_buf_set_lines(0, indexStart, -2, false, localToFileMark)
+end
+
+function utils.prevMark()
+    vim.api.nvim_command("-1")
+end
+
 return utils
