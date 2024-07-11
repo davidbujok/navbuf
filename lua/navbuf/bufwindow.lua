@@ -18,8 +18,6 @@ function bufwindow.createWindowPopup(bufferStrings, lastBuf)
     local line = win_height - height
 
     local lastBufTemp
-    -- __AUTO_GENERATED_PRINT_VAR_START__
-    print([==[bufwindow.createWindowPopup lastBufTemp:]==], vim.inspect(lastBufTemp)) -- __AUTO_GENERATED_PRINT_VAR_END__
     for index, buffer in ipairs(bufferStrings) do
         local mark = string.sub(buffer, 1, 1)
         if mark == lastFileMark then
@@ -48,6 +46,8 @@ function bufwindow.createWindowPopup(bufferStrings, lastBuf)
         if mark == lastFileMark then
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'SpecialKey', linenr - 1, 10, 11)
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'Question', linenr - 1, 1, -1)
+        elseif mark == "-" then
+            vim.api.nvim_buf_add_highlight(bufnr, -1, 'Debug', linenr - 1, 1, -1)
         else
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'Conditional', linenr - 1, 10, 11)
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'CursorLineNumber', linenr - 1, 12, 13)

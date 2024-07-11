@@ -7,14 +7,18 @@ local bufferList = {}
 local popupBufferStrings = {}
 local popupWinId
 local reopen = false
+local _config = {}
 
-function M.findBufferMarks(last_buf, bufferStrings)
+function M.setup(config)
+    _config = config
+end
+
+function M.findBufferMarks(lastBuf, bufferStrings)
     local bufferMarks = utils.getAllBufferMarks()
-
     for _, mark in ipairs(bufferMarks) do
-        local bufferMark = vim.api.nvim_buf_get_mark(last_buf, mark)
+        local bufferMark = vim.api.nvim_buf_get_mark(lastBuf, mark)
         if bufferMark[1] ~= 0 then
-            local marktext = vim.api.nvim_buf_get_lines(last_buf, bufferMark[1] - 1, bufferMark[1], false)
+            local marktext = vim.api.nvim_buf_get_lines(lastBuf, bufferMark[1] - 1, bufferMark[1], false)
             local stripSpace = marktext[1]:gsub("^%s*", "")
             local bufferMarkString = mark .. " ➜ " .. stripSpace
             table.insert(bufferStrings, bufferMarkString)
@@ -30,9 +34,9 @@ function M.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
         table.sort(popupBufferStrings, function(a, b) return a:sub(1, 1) < b:sub(1, 1) end)
     end
 
-    if popupBufferStrings[0] ~= nil then
-        table.insert(popupBufferStrings, "-")
-    end
+    table.insert(popupBufferStrings,
+        "------------------------------ local to buffer marks ------------------------------")
+
     M.findBufferMarks(bufnrInvokedFile, popupBufferStrings)
 
     return popupBufferStrings
@@ -147,6 +151,7 @@ function ShowMenu(tableFileNamesCapitalMarks, bufnrInvokedFile)
 
     local cmd = string.format("<CMD>lua CloseMenu(%s)<CR>", "false")
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<ESC>", cmd, { silent = false, desc = "Quit" })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-C>", cmd, { silent = false, desc = "Quit" })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "q", cmd, { silent = false })
 
     local cmdSwitchToBufMarks = string.format(":lua require('navbuf').switchToBufMarks(%d, %d)<CR>", popupBufnr,
@@ -172,7 +177,7 @@ function M.switchToBufMarks(popupBufnr, bufnrInvokedFile)
 end
 
 function M.addCapitalMarksFileNames()
-    local fileNames = utils.tableFileNamesCapitalMarks()
+    local fileNames = utils.tableFileNamesCapitalMarks(_config.marks)
     local fileNamesCapitalMarks = {}
     for capitalMark, fileName in pairs(fileNames) do
         fileNamesCapitalMarks[capitalMark] = fileName
@@ -188,6 +193,7 @@ end
 -- Start Plugin
 function MyMenu()
     bufferList = {}
+    P(_config.marks)
     local bufnrInvokedFile = vim.api.nvim_get_current_buf()
     local tableFileNamesCapitalMarks = M.addCapitalMarksFileNames()
     ShowMenu(tableFileNamesCapitalMarks, bufnrInvokedFile)

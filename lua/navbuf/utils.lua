@@ -1,12 +1,16 @@
 local utils = {}
 
 -- Create a table with capital lettters
-function utils.tableCapitalLetters()
-    local capitalLetters = {}
-    for i = 65, 90 do
-        table.insert(capitalLetters, string.char(i))
+function utils.tableCapitalLetters(marks)
+    if marks then
+        return marks
+    else
+        local capitalLetters = {}
+        for i = 65, 90 do
+            table.insert(capitalLetters, string.char(i))
+        end
+        return capitalLetters
     end
-    return capitalLetters
 end
 
 function utils.getAllBufferMarks()
@@ -30,8 +34,8 @@ function utils.getFileNameFromCapitalMark(mark)
     end
 end
 
-function utils.tableFileNamesCapitalMarks()
-    local capitalMarks = utils.tableCapitalLetters()
+function utils.tableFileNamesCapitalMarks(marks)
+    local capitalMarks = utils.tableCapitalLetters(marks)
 
     local fileNames = {}
     for _, mark in ipairs(capitalMarks) do
@@ -45,7 +49,6 @@ function utils.tableFileNamesCapitalMarks()
 
     return fileNames
 end
-
 
 function utils.generateCapitalMappings(bufferStrings, bufnr)
     for _, value in ipairs(bufferStrings) do
