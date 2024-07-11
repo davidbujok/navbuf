@@ -3,12 +3,12 @@ local M = {}
 local popup = require("plenary.popup")
 local utils = require("navbuf.utils")
 local bufwindow = require("navbuf.bufwindow")
-local buffer_list = {}
-local bufferStrings = {}
-local Win_id
+local bufferList = {}
+local popupBufferStrings = {}
+local popupWinId
 local reopen = false
 
-function M.FindBufferMarks(last_buf, bufferStrings)
+function M.findBufferMarks(last_buf, bufferStrings)
     local bufferMarks = utils.getAllBufferMarks()
 
     for _, mark in ipairs(bufferMarks) do
@@ -22,28 +22,30 @@ function M.FindBufferMarks(last_buf, bufferStrings)
     end
 end
 
-function M.bufferListToStrings(buffer_list, last_buf)
-    local bufferStrings = {}
-    for mark, fileName in pairs(buffer_list) do
-        local str = mark .. " ➜ " .. fileName
-        table.insert(bufferStrings, str)
-        table.sort(bufferStrings, function(a, b) return a:sub(1, 1) < b:sub(1, 1) end)
+function M.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
+    local popupBufferStrings = {}
+    for capitalMark, fileName in pairs(tableFileNamesCapitalMarks) do
+        local str = capitalMark .. " ➜ " .. fileName
+        table.insert(popupBufferStrings, str)
+        table.sort(popupBufferStrings, function(a, b) return a:sub(1, 1) < b:sub(1, 1) end)
     end
 
-    table.insert(bufferStrings, "-")
-    M.FindBufferMarks(last_buf, bufferStrings)
+    if popupBufferStrings[0] ~= nil then
+        table.insert(popupBufferStrings, "-")
+    end
+    M.findBufferMarks(bufnrInvokedFile, popupBufferStrings)
 
-    return bufferStrings
+    return popupBufferStrings
 end
 
-function M.bufferMarksToKeymaps(bufnr, last_buf)
+function M.createBufferMappings(popupBufnr, bufnrInvokedFile)
     local startOfBufMarks
-    bufnr = tonumber(bufnr)
-    if type(bufnr) ~= "number" then
+    popupBufnr = tonumber(popupBufnr)
+    if type(popupBufnr) ~= "number" then
         return
     end
 
-    for index, line in ipairs(bufferStrings) do
+    for index, line in ipairs(popupBufferStrings) do
         local stripSpaceLine = line:gsub("^%s*", "")
         if string.sub(stripSpaceLine, 1, 1) == "-" then
             startOfBufMarks = index + 1
@@ -51,17 +53,31 @@ function M.bufferMarksToKeymaps(bufnr, last_buf)
         end
     end
 
-    for i = startOfBufMarks, #bufferStrings do
-        local stripSpaceLine = bufferStrings[i]:gsub("^%s*", "")
+    for i = startOfBufMarks, #popupBufferStrings do
+        local stripSpaceLine = popupBufferStrings[i]:gsub("^%s*", "")
         local mark = string.sub(stripSpaceLine, 1, 1)
-        local cmd = string.format(":lua GoToMarkInBuffer('%s', %d)<CR>", mark, last_buf)
+        local cmd = string.format(":lua require('navbuf').goToMarkInBuffer('%s', %d)<CR>", mark, bufnrInvokedFile)
         local lhs = mark
-        vim.api.nvim_buf_set_keymap(bufnr, 'n', lhs, cmd, { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(popupBufnr, 'n', lhs, cmd, { noremap = true, silent = true })
     end
 end
 
-function SwitchToBufMarks(bufnr, last_buf)
-    M.bufferMarksToKeymaps(bufnr, last_buf)
+function M.switchBuffer(mark, lastBuf)
+    local mark_path = vim.api.nvim_get_mark(mark, {})[4]
+    local function edit()
+        vim.api.nvim_command('edit ' .. mark_path)
+    end
+    if reopen == false then
+        vim.api.nvim_win_close(0, true)
+        edit()
+    else
+        vim.api.nvim_win_close(0, true)
+        edit()
+        lastBuf = vim.api.nvim_get_current_buf()
+        MyMenu()
+        M.switchToBufMarks(0, lastBuf)
+        reopen = false
+    end
 end
 
 -- Close popup menu
@@ -84,16 +100,16 @@ function CloseMenu(bool)
         end
 
         local marksLeft = bufferStringsToMarks()
-        for mark in pairs(buffer_list) do
+        for mark in pairs(bufferList) do
             if not marksLeft[mark] then
-                buffer_list[mark] = nil
+                bufferList[mark] = nil
                 local upperMark = string.upper(mark)
                 vim.api.nvim_del_mark(upperMark)
             end
         end
-        vim.api.nvim_win_close(Win_id, true)
+        vim.api.nvim_win_close(popupWinId, true)
     else
-        vim.api.nvim_win_close(Win_id, true)
+        vim.api.nvim_win_close(popupWinId, true)
         local bufnr = vim.api.nvim_get_current_buf()
         local markAsteriks = vim.api.nvim_buf_get_mark(bufnr, "'")
         local win_id = vim.api.nvim_get_current_win()
@@ -101,57 +117,67 @@ function CloseMenu(bool)
     end
 end
 
--- Switch Buffers
-function SwitchBuffer(mark, last_buf)
-    local mark_path = vim.api.nvim_get_mark(mark, {})[4]
-    local function edit()
-        vim.api.nvim_command('edit ' .. mark_path)
-    end
-    if reopen == false then
-        vim.api.nvim_win_close(Win_id, true)
-        edit()
-    else
-        vim.api.nvim_win_close(Win_id, true)
-        edit()
-        last_buf = vim.api.nvim_get_current_buf()
-        MyMenu()
-        SwitchToBufMarks(0, last_buf)
-        reopen = false
-    end
-end
-
-function GoToMarkInBuffer(mark, last_buf)
+function M.goToMarkInBuffer(mark, last_buf)
     local markLine = vim.api.nvim_buf_get_mark(last_buf, mark)
-    vim.api.nvim_win_close(Win_id, true)
+    vim.api.nvim_win_close(popupWinId, true)
     local win_id = vim.api.nvim_get_current_win()
     vim.api.nvim_win_set_cursor(win_id, { markLine[1], markLine[2] })
 end
 
 -- Show popup menu
-function ShowMenu(buffer_list, lastBuf)
-    bufferStrings = M.bufferListToStrings(buffer_list, lastBuf)
+function ShowMenu(tableFileNamesCapitalMarks, bufnrInvokedFile)
+    popupBufferStrings = M.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
 
-    local ids = bufwindow.createWindowPopup(bufferStrings, lastBuf)
-    Win_id = ids[1]
-    local bufnr = ids[2]
-    bufferStrings = ids[3]
+    local ids = bufwindow.createWindowPopup(popupBufferStrings, bufnrInvokedFile)
+    local popupBufnr = ids[1]
+    popupWinId = ids[2]
+    popupBufferStrings = ids[3]
 
-    utils.generateCapitalMappings(bufferStrings, bufnr)
+    utils.generateCapitalMappings(popupBufferStrings, popupBufnr)
 
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "D", "<CMD>delete<CR>", { silent = false })
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-N>", "<CMD>+1<CR>", { silent = false })
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-P>", "<CMD>-1<CR>", { silent = false })
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "X", "<CMD>delmarks [A-Z]<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "D", "<CMD>delete<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-N>", "<CMD>+1<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-P>", "<CMD>-1<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "j", "<C-E>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "k", "<C-Y>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "X", ":lua require('navbuf').deleteCapitalMarks()<CR>",
+        { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "Z", ":lua require('navbuf').deleteBufferMarks()<CR>",
+        { silent = false })
 
     local cmd = string.format("<CMD>lua CloseMenu(%s)<CR>", "false")
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "<ESC>", cmd, { silent = false, desc = "Quit" })
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "q", cmd, { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<ESC>", cmd, { silent = false, desc = "Quit" })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "q", cmd, { silent = false })
 
-    local cmdSwitchToBufMarks = string.format(":lua SwitchToBufMarks(%d, %d)<CR>", bufnr, lastBuf)
-    vim.api.nvim_buf_set_keymap(bufnr, "n", ",", cmdSwitchToBufMarks, { silent = false })
+    local cmdSwitchToBufMarks = string.format(":lua require('navbuf').switchToBufMarks(%d, %d)<CR>", popupBufnr,
+        bufnrInvokedFile)
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", ",", cmdSwitchToBufMarks, { silent = false })
 
     local cmdAsteriks = string.format("<CMD>lua CloseMenu(%s)<CR>", "true")
-    vim.api.nvim_buf_set_keymap(bufnr, "n", "'", cmdAsteriks, { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "'", cmdAsteriks, { silent = false })
+end
+
+function M.deleteCapitalMarks()
+    vim.api.nvim_win_close(0, true)
+    vim.api.nvim_command("delmarks [A-Z]")
+end
+
+function M.deleteBufferMarks()
+    vim.api.nvim_win_close(0, true)
+    vim.api.nvim_command("delmarks a-z")
+end
+
+function M.switchToBufMarks(popupBufnr, bufnrInvokedFile)
+    M.createBufferMappings(popupBufnr, bufnrInvokedFile)
+end
+
+function M.addCapitalMarksFileNames()
+    local fileNames = utils.tableFileNamesCapitalMarks()
+    local fileNamesCapitalMarks = {}
+    for capitalMark, fileName in pairs(fileNames) do
+        fileNamesCapitalMarks[capitalMark] = fileName
+    end
+    return fileNamesCapitalMarks
 end
 
 function ReopenNavbuf()
@@ -159,19 +185,12 @@ function ReopenNavbuf()
     MyMenu()
 end
 
-function utils.PopulateBufferList()
-    local fileNames = utils.loadFileNamesForCapitalMarks()
-    for mark, fileName in pairs(fileNames) do
-        buffer_list[mark] = fileName
-    end
-end
-
 -- Start Plugin
 function MyMenu()
-    local bufnr = vim.api.nvim_get_current_buf()
-    buffer_list = {}
-    utils.PopulateBufferList()
-    ShowMenu(buffer_list, bufnr)
+    bufferList = {}
+    local bufnrInvokedFile = vim.api.nvim_get_current_buf()
+    local tableFileNamesCapitalMarks = M.addCapitalMarksFileNames()
+    ShowMenu(tableFileNamesCapitalMarks, bufnrInvokedFile)
 end
 
 vim.api.nvim_set_keymap("n", "'", "<cmd>lua MyMenu()<CR>", { silent = false })

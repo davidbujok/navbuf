@@ -1,7 +1,7 @@
 local utils = {}
 
 -- Create a table with capital lettters
-function utils.getAllCapitalMarks()
+function utils.tableCapitalLetters()
     local capitalLetters = {}
     for i = 65, 90 do
         table.insert(capitalLetters, string.char(i))
@@ -17,7 +17,7 @@ function utils.getAllBufferMarks()
     return letters
 end
 
-function utils.getFileNameFromMark(mark)
+function utils.getFileNameFromCapitalMark(mark)
     local path = vim.api.nvim_get_mark(mark, {})[4]
     if not path then
         return
@@ -30,12 +30,12 @@ function utils.getFileNameFromMark(mark)
     end
 end
 
-function utils.loadFileNamesForCapitalMarks()
-    local capitalMarks = utils.getAllCapitalMarks()
+function utils.tableFileNamesCapitalMarks()
+    local capitalMarks = utils.tableCapitalLetters()
 
     local fileNames = {}
     for _, mark in ipairs(capitalMarks) do
-        local fileName = utils.getFileNameFromMark(mark)
+        local fileName = utils.getFileNameFromCapitalMark(mark)
 
         if fileName then
             fileNames[string.lower(mark)] = fileName
@@ -46,12 +46,13 @@ function utils.loadFileNamesForCapitalMarks()
     return fileNames
 end
 
+
 function utils.generateCapitalMappings(bufferStrings, bufnr)
     for _, value in ipairs(bufferStrings) do
         local stripSpace = value:gsub("^%s*", "")
         local mark = string.sub(stripSpace, 1, 1)
         local capitalMark = string.upper(mark)
-        local cmd = string.format(":lua SwitchBuffer('%s', '%d')<CR>", capitalMark, bufnr)
+        local cmd = string.format(":lua require('navbuf').switchBuffer('%s', '%d')<CR>", capitalMark, bufnr)
         local lhs = mark
         vim.api.nvim_buf_set_keymap(bufnr, 'n', lhs, cmd, { noremap = true, silent = true })
     end
@@ -59,7 +60,7 @@ end
 
 function utils.getAllPathsCapitalMarks(lastBuf)
     local lastBufPath = vim.api.nvim_buf_get_name(lastBuf)
-    local capitalMarks = utils.getAllCapitalMarks()
+    local capitalMarks = utils.tableCapitalLetters()
     local paths = {}
     for _, mark in ipairs(capitalMarks) do
         local path = vim.api.nvim_get_mark(mark, {})[4]

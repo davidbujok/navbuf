@@ -18,6 +18,8 @@ function bufwindow.createWindowPopup(bufferStrings, lastBuf)
     local line = win_height - height
 
     local lastBufTemp
+    -- __AUTO_GENERATED_PRINT_VAR_START__
+    print([==[bufwindow.createWindowPopup lastBufTemp:]==], vim.inspect(lastBufTemp)) -- __AUTO_GENERATED_PRINT_VAR_END__
     for index, buffer in ipairs(bufferStrings) do
         local mark = string.sub(buffer, 1, 1)
         if mark == lastFileMark then
@@ -25,13 +27,15 @@ function bufwindow.createWindowPopup(bufferStrings, lastBuf)
             break
         end
     end
-    table.insert(bufferStrings, 1, lastBufTemp)
-
+    if lastBufTemp then
+        table.insert(bufferStrings, 1, lastBufTemp)
+    end
 
     Win_id = popup.create(bufferStrings, {
         pos = "center",
         padding = { 0, 0, 0, 10 },
         minwidth = curr_width,
+        maxheight = height,
         minheight = height,
         col = col + 1,
         line = line,
@@ -51,7 +55,7 @@ function bufwindow.createWindowPopup(bufferStrings, lastBuf)
         end
     end
 
-    return { Win_id, bufnr, bufferStrings }
+    return { bufnr, Win_id, bufferStrings }
 end
 
 return bufwindow
