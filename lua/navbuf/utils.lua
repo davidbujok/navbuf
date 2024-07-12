@@ -2,6 +2,7 @@ local utils = {}
 
 -- Create a table with capital lettters
 function utils.tableCapitalLetters(marks)
+-- TODO: user defined marks on the list other just mappings
     if marks then
         return marks
     else

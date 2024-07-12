@@ -46,7 +46,7 @@ function bufwindow.createWindowPopup(bufferStrings, lastBuf)
         if mark == lastFileMark then
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'SpecialKey', linenr - 1, 10, 11)
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'Question', linenr - 1, 1, -1)
-        elseif mark == "-" then
+        elseif mark == " " then
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'Debug', linenr - 1, 1, -1)
         else
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'Conditional', linenr - 1, 10, 11)
