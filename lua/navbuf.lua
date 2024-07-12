@@ -1,6 +1,5 @@
 local M = {}
 
-local popup = require("plenary.popup")
 local utils = require("navbuf.utils")
 local bufwindow = require("navbuf.bufwindow")
 local bufferList = {}
@@ -11,38 +10,6 @@ local _config = {}
 
 function M.setup(config)
     _config = config
-end
-
-function M.findBufferMarks(lastBuf, bufferStrings)
-    local bufferMarks = utils.getAllBufferMarks()
-    for _, mark in ipairs(bufferMarks) do
-        local bufferMark = vim.api.nvim_buf_get_mark(lastBuf, mark)
-        if bufferMark[1] ~= 0 then
-            local marktext = vim.api.nvim_buf_get_lines(lastBuf, bufferMark[1] - 1, bufferMark[1], false)
-            local stripSpace = marktext[1]:gsub("^%s*", "")
-            local bufferMarkString = mark .. " ➜ " .. stripSpace
-            table.insert(bufferStrings, bufferMarkString)
-        end
-    end
-end
-
-function M.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
-    local popupBufferStrings = {}
-    for capitalMark, fileName in pairs(tableFileNamesCapitalMarks) do
-        local str = capitalMark .. " ➜ " .. fileName
-        table.insert(popupBufferStrings, str)
-        table.sort(popupBufferStrings, function(a, b) return a:sub(1, 1) < b:sub(1, 1) end)
-    end
-
-    local winWidth = vim.api.nvim_win_get_width(0)
-    local spaceNumber = winWidth /2 - 20
-    print(winWidth, spaceNumber)
-    local spaceToReplace = string.rep(" ", spaceNumber)
-    local breakString = string.format("%s  buffer marks ", spaceToReplace)
-    table.insert(popupBufferStrings, breakString)
-    M.findBufferMarks(bufnrInvokedFile, popupBufferStrings)
-
-    return popupBufferStrings
 end
 
 function M.createBufferMappings(popupBufnr, bufnrInvokedFile)
@@ -83,7 +50,7 @@ function M.switchBuffer(mark, lastBuf)
         vim.api.nvim_win_close(0, true)
         edit()
         lastBuf = vim.api.nvim_get_current_buf()
-        MyMenu()
+        ShowMenu()
         M.switchToBufMarks(0, lastBuf)
         reopen = false
     end
@@ -116,9 +83,9 @@ function CloseMenu(bool)
                 vim.api.nvim_del_mark(upperMark)
             end
         end
-        vim.api.nvim_win_close(popupWinId, true)
+        vim.api.nvim_win_close(0, true)
     else
-        vim.api.nvim_win_close(popupWinId, true)
+        vim.api.nvim_win_close(0, true)
         local bufnr = vim.api.nvim_get_current_buf()
         local markAsteriks = vim.api.nvim_buf_get_mark(bufnr, "'")
         local win_id = vim.api.nvim_get_current_win()
@@ -134,20 +101,23 @@ function M.goToMarkInBuffer(mark, last_buf)
 end
 
 -- Show popup menu
-function ShowMenu(tableFileNamesCapitalMarks, bufnrInvokedFile)
-    popupBufferStrings = M.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
+function ShowMenu()
+    bufferList = {}
+    local bufnrInvokedFile = vim.api.nvim_get_current_buf()
+    local tableFileNamesCapitalMarks = utils.capitalMarksFileNames(_config.marks)
+    popupBufferStrings = utils.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
 
-    local ids = bufwindow.createWindowPopup(popupBufferStrings, bufnrInvokedFile)
+    local ids = bufwindow.createWindowPopup(popupBufferStrings, bufnrInvokedFile, _config)
     local popupBufnr = ids[1]
     popupWinId = ids[2]
     popupBufferStrings = ids[3]
 
-    utils.generateCapitalMappings(popupBufferStrings, popupBufnr)
+    utils.generateCapitalMappings(popupBufnr)
 
-    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "D", "<CMD>delete<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "D", "<CMD>lua require('navbuf.utils').deleteMark()<CR>", { silent = false })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-N>", "<C-Y>", { silent = false })
-    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-P>", "<CMD>-1<CR>", { silent = false })
-    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "j", "<CMD>-1<CR>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-P>", "<C-E>", { silent = false })
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "j", "<CMD>+1<CR>", { silent = false })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "k", "<CMD>-1<CR>", { silent = false })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "X", ":lua require('navbuf').deleteCapitalMarks()<CR>",
         { silent = false })
@@ -188,29 +158,12 @@ function M.switchToBufMarks(popupBufnr, bufnrInvokedFile)
     M.createBufferMappings(popupBufnr, bufnrInvokedFile)
 end
 
-function M.addCapitalMarksFileNames()
-    local fileNames = utils.tableFileNamesCapitalMarks(_config.marks)
-    local fileNamesCapitalMarks = {}
-    for capitalMark, fileName in pairs(fileNames) do
-        fileNamesCapitalMarks[capitalMark] = fileName
-    end
-    return fileNamesCapitalMarks
-end
-
 function ReopenNavbuf()
     reopen = true
-    MyMenu()
+    ShowMenu()
 end
 
--- Start Plugin
-function MyMenu()
-    bufferList = {}
-    local bufnrInvokedFile = vim.api.nvim_get_current_buf()
-    local tableFileNamesCapitalMarks = M.addCapitalMarksFileNames()
-    ShowMenu(tableFileNamesCapitalMarks, bufnrInvokedFile)
-end
-
-vim.api.nvim_set_keymap("n", "'", "<cmd>lua MyMenu()<CR>", { silent = false })
+vim.api.nvim_set_keymap("n", "'", "<cmd>lua ShowMenu()<CR>", { silent = false })
 vim.api.nvim_set_keymap("n", "cm", "<cmd>lua ReopenNavbuf()<CR>", { silent = false })
 
 return M

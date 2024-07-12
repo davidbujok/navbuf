@@ -3,7 +3,7 @@ local bufwindow = {}
 local popup = require("plenary.popup")
 local utils = require("navbuf.utils")
 
-function bufwindow.createWindowPopup(bufferStrings, lastBuf)
+function bufwindow.createWindowPopup(bufferStrings, lastBuf, config)
     local lastFileMark = utils.getAllPathsCapitalMarks(lastBuf)
 
     local height = 10

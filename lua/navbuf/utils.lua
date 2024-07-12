@@ -1,17 +1,12 @@
 local utils = {}
 
 -- Create a table with capital lettters
-function utils.tableCapitalLetters(marks)
--- TODO: user defined marks on the list other just mappings
-    if marks then
-        return marks
-    else
-        local capitalLetters = {}
-        for i = 65, 90 do
-            table.insert(capitalLetters, string.char(i))
-        end
-        return capitalLetters
+function utils.tableCapitalLetters()
+    local capitalLetters = {}
+    for i = 65, 90 do
+        table.insert(capitalLetters, string.char(i))
     end
+    return capitalLetters
 end
 
 function utils.getAllBufferMarks()
@@ -35,11 +30,59 @@ function utils.getFileNameFromCapitalMark(mark)
     end
 end
 
-function utils.tableFileNamesCapitalMarks(marks)
-    local capitalMarks = utils.tableCapitalLetters(marks)
+function utils.deleteMark()
+    local line = vim.api.nvim_get_current_line()
+    local stripSpaceLine = line:gsub("^%s*", "")
+    local mark = string.sub(stripSpaceLine, 1, 1)
+    local markToDelete = string.format("delmarks %s", string.upper(mark))
+    vim.api.nvim_command(markToDelete)
+    CloseMenu(false)
+    ShowMenu()
+end
 
+function utils.findBufferMarks(lastBuf, bufferStrings)
+    local bufferMarks = utils.getAllBufferMarks()
+    for _, mark in ipairs(bufferMarks) do
+        local bufferMark = vim.api.nvim_buf_get_mark(lastBuf, mark)
+        if bufferMark[1] ~= 0 then
+            local marktext = vim.api.nvim_buf_get_lines(lastBuf, bufferMark[1] - 1, bufferMark[1], false)
+            local stripSpace = marktext[1]:gsub("^%s*", "")
+            local bufferMarkString = mark .. " ➜ " .. stripSpace
+            table.insert(bufferStrings, bufferMarkString)
+        end
+    end
+end
+
+function utils.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
+    local popupBufferStrings = {}
+    for capitalMark, fileName in pairs(tableFileNamesCapitalMarks) do
+        local str = capitalMark .. " ➜ " .. fileName
+        table.insert(popupBufferStrings, str)
+        table.sort(popupBufferStrings, function(a, b) return a:sub(1, 1) < b:sub(1, 1) end)
+    end
+
+    local winWidth = vim.api.nvim_win_get_width(0)
+    local spaceNumber = winWidth / 2 - 20
+    local spaceToReplace = string.rep(" ", spaceNumber)
+    local breakString = string.format("%s  buffer marks ", spaceToReplace)
+    table.insert(popupBufferStrings, breakString)
+    utils.findBufferMarks(bufnrInvokedFile, popupBufferStrings)
+
+    return popupBufferStrings
+end
+
+function utils.capitalMarksFileNames(marks)
+    local fileNames = utils.tableFileNamesCapitalMarks(marks)
+    local fileNamesCapitalMarks = {}
+    for capitalMark, fileName in pairs(fileNames) do
+        fileNamesCapitalMarks[capitalMark] = fileName
+    end
+    return fileNamesCapitalMarks
+end
+
+function utils.tableFileNamesCapitalMarks(marks)
     local fileNames = {}
-    for _, mark in ipairs(capitalMarks) do
+    for _, mark in ipairs(marks) do
         local fileName = utils.getFileNameFromCapitalMark(mark)
 
         if fileName then
@@ -47,14 +90,13 @@ function utils.tableFileNamesCapitalMarks(marks)
         else
         end
     end
-
     return fileNames
 end
 
-function utils.generateCapitalMappings(bufferStrings, bufnr)
-    for _, value in ipairs(bufferStrings) do
-        local stripSpace = value:gsub("^%s*", "")
-        local mark = string.sub(stripSpace, 1, 1)
+function utils.generateCapitalMappings(bufnr)
+    local capitalLetters = utils.tableCapitalLetters()
+    local lines = utils.capitalMarksFileNames(capitalLetters)
+    for mark, _ in pairs(lines) do
         local capitalMark = string.upper(mark)
         local cmd = string.format(":lua require('navbuf').switchBuffer('%s', '%d')<CR>", capitalMark, bufnr)
         local lhs = mark
