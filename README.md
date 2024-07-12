@@ -5,6 +5,9 @@ feature.
 
 ![navbuf](https://github.com/davidbujok/navbuf/assets/119963544/36a497e0-8b34-4411-a841-30c83c00520e)
 
+https://github.com/user-attachments/assets/b1a635cb-3354-46a1-a1d4-7ad6e0c04185
+
+
 ## Features
 
 - **Popup Window Navigation:** Invoke a popup window with a user-defined keybind to list marks.
