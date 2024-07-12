@@ -41,7 +41,7 @@ end
 function M.switchBuffer(mark, lastBuf)
     local mark_path = vim.api.nvim_get_mark(mark, {})[4]
     local function edit()
-        vim.api.nvim_command('edit ' .. mark_path)
+        vim.api.nvim_command("normal! '" .. mark)
     end
     if reopen == false then
         vim.api.nvim_win_close(0, true)
