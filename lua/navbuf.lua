@@ -50,7 +50,7 @@ function M.switchBuffer(mark, lastBuf)
         vim.api.nvim_win_close(0, true)
         edit()
         lastBuf = vim.api.nvim_get_current_buf()
-        ShowMenu()
+      M.show()
         M.switchToBufMarks(0, lastBuf)
         reopen = false
     end
@@ -101,7 +101,7 @@ function M.goToMarkInBuffer(mark, last_buf)
 end
 
 -- Show popup menu
-function ShowMenu()
+function M.show()
     bufferList = {}
     local bufnrInvokedFile = vim.api.nvim_get_current_buf()
     local tableFileNamesCapitalMarks = utils.capitalMarksFileNames(_config.marks)
@@ -158,12 +158,12 @@ function M.switchToBufMarks(popupBufnr, bufnrInvokedFile)
     M.createBufferMappings(popupBufnr, bufnrInvokedFile)
 end
 
-function ReopenNavbuf()
+function M.twoStep()
     reopen = true
-    ShowMenu()
+    M.show()
 end
 
-vim.api.nvim_set_keymap("n", "'", "<cmd>lua ShowMenu()<CR>", { silent = false })
-vim.api.nvim_set_keymap("n", "cm", "<cmd>lua ReopenNavbuf()<CR>", { silent = false })
+vim.api.nvim_set_keymap("n", "'", "<cmd>lua require('navbuf').show()<CR>", { silent = false })
+vim.api.nvim_set_keymap("n", "cm", "<cmd>lua require('navbuf').twoStep()<CR>", { silent = false })
 
 return M
