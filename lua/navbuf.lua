@@ -38,19 +38,20 @@ function M.createBufferMappings(popupBufnr, bufnrInvokedFile)
     end
 end
 
-function M.switchBuffer(mark, lastBuf)
-    local mark_path = vim.api.nvim_get_mark(mark, {})[4]
+function M.switchBuffer(mark, lastBuf, winnr)
+
     local function edit()
         vim.api.nvim_command("normal! '" .. mark)
+        vim.api.nvim_exec2("normal! `\"", {})
     end
-    if reopen == false then
-        vim.api.nvim_win_close(0, true)
-        edit()
-    else
-        vim.api.nvim_win_close(0, true)
-        edit()
-        lastBuf = vim.api.nvim_get_current_buf()
-      M.show()
+
+    vim.api.nvim_win_close(0, true)
+    vim.api.nvim_set_current_win(winnr)
+
+    edit()
+
+    if reopen == true then
+        M.show()
         M.switchToBufMarks(0, lastBuf)
         reopen = false
     end
