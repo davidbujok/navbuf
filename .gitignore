@@ -1,0 +1,4 @@
+Session.vim
+lua/navbuf/somefilethisfile.lua
+lua/navbuf/somefilethisfilelongerfile.lua
+plugin/
