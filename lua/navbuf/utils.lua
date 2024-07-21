@@ -1,4 +1,5 @@
 local utils = {}
+-- local navbuf = require('navbuf')
 
 -- Create a table with capital lettters
 function utils.tableCapitalLetters()
@@ -37,7 +38,7 @@ function utils.deleteMark()
     local markToDelete = string.format("delmarks %s", string.upper(mark))
     vim.api.nvim_command(markToDelete)
     CloseMenu(false)
-    ShowMenu()
+    navbuf.show()
 end
 
 function utils.findBufferMarks(lastBuf, bufferStrings)
@@ -93,14 +94,14 @@ function utils.tableFileNamesCapitalMarks(marks)
     return fileNames
 end
 
-function utils.generateCapitalMappings(bufnr)
+function utils.generateCapitalMappings(bufnr, winnr)
     local capitalLetters = utils.tableCapitalLetters()
     local lines = utils.capitalMarksFileNames(capitalLetters)
     for mark, _ in pairs(lines) do
         local capitalMark = string.upper(mark)
-        local cmd = string.format(":lua require('navbuf').switchBuffer('%s', '%d')<CR>", capitalMark, bufnr)
+        local cmd = string.format(":lua require('navbuf').switchBuffer('%s', '%d', %d)<CR>", capitalMark, bufnr, winnr)
         local lhs = mark
-        vim.api.nvim_buf_set_keymap(bufnr, 'n', lhs, cmd, { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(bufnr, 'n', lhs, cmd, { silent = true })
     end
 end
 
