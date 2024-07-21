@@ -83,6 +83,7 @@ function CloseMenu(bool, winnr, row, col)
 
     vim.api.nvim_win_close(0, true)
     vim.api.nvim_set_current_win(winnr)
+    print(row, col)
     vim.api.nvim_win_set_cursor(winnr, { row, col })
 end
 
@@ -116,8 +117,9 @@ function M.show()
 
     utils.generateCapitalMappings(popupBufnr, winnrInvokedFile)
 
-    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "D", "<CMD>lua require('navbuf.utils').deleteMark()<CR>",
-        { silent = false })
+    local cmdDelete = string.format("<CMD>lua require('navbuf.utils').deleteMark(%d, %d, %d)<CR>",
+        winnrInvokedFile, currentPosition[1], currentPosition[2])
+    vim.api.nvim_buf_set_keymap(popupBufnr, "n", "D", cmdDelete, { silent = false })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-N>", "<C-Y>", { silent = false })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-P>", "<C-E>", { silent = false })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "j", "<CMD>+1<CR>", { silent = false })
