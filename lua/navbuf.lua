@@ -60,41 +60,30 @@ end
 
 -- Close popup menu
 function CloseMenu(bool, winnr, row, col)
-    if bool == false then
-        local bufnr = vim.api.nvim_get_current_buf()
-        local lineCount = vim.api.nvim_buf_line_count(bufnr)
-        local lines = vim.api.nvim_buf_get_lines(bufnr, 0, lineCount, false)
-
-        local function bufferStringsToMarks()
-            local marksLeft = {}
-            for _, line in ipairs(lines) do
-                local stripSpaceLine = line:gsub("^%s*", "")
-                local mark = string.sub(stripSpaceLine, 1, 1)
-                if not mark:match("[ a-z ]") then
-                    marksLeft[mark] = true
-                end
-            end
-            return marksLeft
-        end
-
-        local marksLeft = bufferStringsToMarks()
-        for mark in pairs(bufferList) do
-            if not marksLeft[mark] then
-                bufferList[mark] = nil
-                local upperMark = string.upper(mark)
-                vim.api.nvim_del_mark(upperMark)
-            end
-        end
+    local bufnr = vim.api.nvim_get_current_buf()
+    local winId = vim.api.nvim_get_current_win()
+    if bool then
         vim.api.nvim_win_close(0, true)
-        vim.api.nvim_set_current_win(winnr)
-        vim.api.nvim_win_set_cursor(winnr, {row, col})
-    else
-        vim.api.nvim_win_close(0, true)
-        local bufnr = vim.api.nvim_get_current_buf()
         local markAsteriks = vim.api.nvim_buf_get_mark(bufnr, "'")
-        local win_id = vim.api.nvim_get_current_win()
-        vim.api.nvim_win_set_cursor(win_id, { markAsteriks[1], markAsteriks[2] })
+        vim.api.nvim_win_set_cursor(winId, { markAsteriks[1], markAsteriks[2] })
+        return
     end
+
+    local lineCount = vim.api.nvim_buf_line_count(bufnr)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, lineCount, false)
+    local marksLeft = utils.findMarksLeft(lines)
+
+    for mark in pairs(bufferList) do
+        if not marksLeft[mark] then
+            bufferList[mark] = nil
+            local upperMark = string.upper(mark)
+            vim.api.nvim_del_mark(upperMark)
+        end
+    end
+
+    vim.api.nvim_win_close(0, true)
+    vim.api.nvim_set_current_win(winnr)
+    vim.api.nvim_win_set_cursor(winnr, { row, col })
 end
 
 function M.goToMarkInBuffer(mark, last_buf)
