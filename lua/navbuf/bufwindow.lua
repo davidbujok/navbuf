@@ -44,14 +44,14 @@ function bufwindow.createWindowPopup(bufferStrings, lastBuf, config)
     for linenr, str in ipairs(bufferStrings) do
         local mark = string.sub(str, 11, 11)
         if mark == lastFileMark then
-            vim.api.nvim_buf_add_highlight(bufnr, -1, 'SpecialKey', linenr - 1, 10, 11)
-            vim.api.nvim_buf_add_highlight(bufnr, -1, 'Question', linenr - 1, 1, -1)
+            vim.api.nvim_buf_add_highlight(bufnr, -1, 'Number', linenr - 1, 10, 11)
+            vim.api.nvim_buf_add_highlight(bufnr, -1, 'MoreMsg', linenr - 1, 1, -1)
         elseif mark == " " then
             vim.api.nvim_buf_add_highlight(bufnr, -1, 'Debug', linenr - 1, 1, -1)
         else
-            vim.api.nvim_buf_add_highlight(bufnr, -1, 'Conditional', linenr - 1, 10, 11)
-            vim.api.nvim_buf_add_highlight(bufnr, -1, 'CursorLineNumber', linenr - 1, 12, 13)
-            vim.api.nvim_buf_add_highlight(bufnr, -1, 'SpecialKey', linenr - 1, 14, -1)
+            vim.api.nvim_buf_add_highlight(bufnr, -1, 'Number', linenr - 1, 10, 11)
+            vim.api.nvim_buf_add_highlight(bufnr, -1, 'MoreMsg', linenr - 1, 12, 13)
+            vim.api.nvim_buf_add_highlight(bufnr, -1, 'Normal', linenr - 1, 14, -1)
         end
     end
 
