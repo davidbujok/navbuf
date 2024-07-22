@@ -57,7 +57,7 @@ or forget the mappings set for a given buffer.
 
 ### Setup your own keymaps
 
-* Setup your own mapping
+* Setup your own mappings
 
 ```
 vim.keymap.set("n", "'", "<CMD>lua Navbuf()<CR>", { desc = "marks" })
@@ -66,5 +66,11 @@ vim.keymap.set("n", "'", "<CMD>lua Navbuf()<CR>", { desc = "marks" })
 * Go to marked file and immediately pick buffer's mark
 
 ```
-vim.keymap.set("n", "'", "<CMD>lua NavbufTwoStep()", { desc = "marks" })
+vim.keymap.set("n", "'", "<CMD>lua NavbufTwoStep()<CR>", { desc = "Two step mark" })
+```
+
+* Toggle window with list of marks
+
+```
+vim.keymap.set("n", "'", "<CMD>lua require('navbuf').toggleList()<CR>", { desc = "Toggle marks list" })
 ```
