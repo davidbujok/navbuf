@@ -21,7 +21,9 @@ function listwindow.createWindowPopup(marks)
                 end
             end
             local str = string.format("%s %s", mark, fileNames[string.lower(mark)])
-            table.insert(strings, str)
+            if fileNames[string.lower(mark)] then
+                table.insert(strings, str)
+            end
         end
         return { strings, longest }
     end
