@@ -25,7 +25,6 @@ function M.createBufferMappings(popupBufnr, bufnrInvokedFile)
         local stripSpaceLine = line:gsub("^%s*", "")
         local letter = string.sub(stripSpaceLine, 1, 1)
         if not letter:match("[ a-z ]") then
-            print(stripSpaceLine)
             startOfBufMarks = index + 1
             break
         end
@@ -62,6 +61,7 @@ end
 function CloseMenu(bool, winnr, row, col)
     local bufnr = vim.api.nvim_get_current_buf()
     local winId = vim.api.nvim_get_current_win()
+
     if bool then
         vim.api.nvim_win_close(0, true)
         local markAsteriks = vim.api.nvim_buf_get_mark(bufnr, "'")
@@ -83,7 +83,6 @@ function CloseMenu(bool, winnr, row, col)
 
     vim.api.nvim_win_close(0, true)
     vim.api.nvim_set_current_win(winnr)
-    print(row, col)
     vim.api.nvim_win_set_cursor(winnr, { row, col })
 end
 
@@ -103,12 +102,12 @@ function M.show()
     local tableFileNamesCapitalMarks = utils.capitalMarksFileNames(_config.marks)
     popupBufferStrings = utils.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
 
-    local listWindowId
-    if loadList then
-        listWindowId = listwindow.createWindowPopup(_config.marks)
-        vim.api.nvim_win_set_cursor(winnrInvokedFile, { 1, 1 })
-        loadList = false
-    end
+    -- local listWindowId
+    -- if loadList then
+    --     listWindowId = listwindow.createWindowPopup(_config.marks)
+    --     vim.api.nvim_win_set_cursor(winnrInvokedFile, { 1, 1 })
+    --     loadList = false
+    -- end
 
     local ids = bufwindow.createWindowPopup(popupBufferStrings, bufnrInvokedFile, _config)
     local popupBufnr = ids[1]
@@ -117,7 +116,7 @@ function M.show()
 
     utils.generateCapitalMappings(popupBufnr, winnrInvokedFile)
 
-    local cmdDelete = string.format("<CMD>lua require('navbuf.utils').deleteMark(%d, %d, %d)<CR>",
+    local cmdDelete = string.format("<CMD>lua require('navbuf').deleteMarksFromList(%d, %d, %d)<CR>",
         winnrInvokedFile, currentPosition[1], currentPosition[2])
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "D", cmdDelete, { silent = false })
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "<C-N>", "<C-Y>", { silent = false })
@@ -141,6 +140,28 @@ function M.show()
 
     local cmdAsteriks = string.format("<CMD>lua CloseMenu(%s)<CR>", "true")
     vim.api.nvim_buf_set_keymap(popupBufnr, "n", "'", cmdAsteriks, { silent = false })
+end
+
+function M.toggleList()
+    if loadList then
+        local winnr = vim.api.nvim_get_current_win()
+        local currentPosition = vim.api.nvim_win_get_cursor(0)
+        listwindow.createWindowPopup(_config.marks)
+        loadList = false
+        vim.api.nvim_set_current_win(winnr)
+        vim.api.nvim_win_set_cursor(winnr, { currentPosition[1], currentPosition[2] })
+    else
+        listwindow.CloseWindow()
+        loadList = true
+    end
+end
+
+function M.deleteMarksFromList(winnr, row, col)
+    utils.deleteMark(winnr, row, col)
+    listwindow.CloseWindow()
+    listwindow.createWindowPopup(_config.marks)
+    vim.api.nvim_set_current_win(winnr)
+    vim.api.nvim_win_set_cursor(winnr, { row, col })
 end
 
 function M.deleteCapitalMarks()
@@ -169,7 +190,5 @@ function M.twoStep()
     M.show()
 end
 
-vim.api.nvim_set_keymap("n", "'", "<cmd>lua require('navbuf').show()<CR>", { silent = false })
-vim.api.nvim_set_keymap("n", "cm", "<cmd>lua require('navbuf').twoStep()<CR>", { silent = false })
 
 return M

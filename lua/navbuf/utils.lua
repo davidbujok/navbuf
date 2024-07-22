@@ -31,14 +31,12 @@ function utils.getFileNameFromCapitalMark(mark)
 end
 
 function utils.deleteMark(winnr, row, col)
-    print("This is here: ", row, col )
     local line = vim.api.nvim_get_current_line()
     local stripSpaceLine = line:gsub("^%s*", "")
     local mark = string.sub(stripSpaceLine, 1, 1)
     local markToDelete = string.format("delmarks %s", string.upper(mark))
     vim.api.nvim_command(markToDelete)
     CloseMenu(false, winnr, row, col)
-    vim.api.nvim_command("lua require('navbuf').show()")
 end
 
 function utils.findBufferMarks(lastBuf, bufferStrings)
