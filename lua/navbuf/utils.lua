@@ -52,18 +52,6 @@ function utils.findBufferMarks(lastBuf, bufferStrings)
     end
 end
 
-function utils.findMarksLeft(lines)
-    local marksLeft = {}
-    for _, line in ipairs(lines) do
-        local stripSpaceLine = line:gsub("^%s*", "")
-        local mark = string.sub(stripSpaceLine, 1, 1)
-        if not mark:match("[ a-z ]") then
-            marksLeft[mark] = true
-        end
-    end
-    return marksLeft
-end
-
 function utils.fileNamesToStrings(tableFileNamesCapitalMarks, bufnrInvokedFile)
     local popupBufferStrings = {}
     for capitalMark, fileName in pairs(tableFileNamesCapitalMarks) do

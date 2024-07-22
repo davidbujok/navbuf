@@ -51,8 +51,9 @@ function M.switchBuffer(mark, lastBuf, winnr)
     edit()
 
     if reopen == true then
+        local bufnr = vim.api.nvim_get_current_buf()
         M.show()
-        M.switchToBufMarks(0, lastBuf)
+        M.switchToBufMarks(0, bufnr)
         reopen = false
     end
 end
@@ -67,18 +68,6 @@ function CloseMenu(bool, winnr, row, col)
         local markAsteriks = vim.api.nvim_buf_get_mark(bufnr, "'")
         vim.api.nvim_win_set_cursor(winId, { markAsteriks[1], markAsteriks[2] })
         return
-    end
-
-    local lineCount = vim.api.nvim_buf_line_count(bufnr)
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, lineCount, false)
-    local marksLeft = utils.findMarksLeft(lines)
-
-    for mark in pairs(bufferList) do
-        if not marksLeft[mark] then
-            bufferList[mark] = nil
-            local upperMark = string.upper(mark)
-            vim.api.nvim_del_mark(upperMark)
-        end
     end
 
     vim.api.nvim_win_close(0, true)
