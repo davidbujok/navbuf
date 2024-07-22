@@ -1,4 +1,5 @@
 local listwindow = {}
+local id
 
 local popup = require("plenary.popup")
 local utils = require("navbuf.utils")
@@ -35,15 +36,13 @@ function listwindow.createWindowPopup(marks)
         stringWidth = strAndLen[2]
     end
 
-    local id = popup.create(strings, {
+    id = popup.create(strings, {
         pos = "center",
         padding = { 0, 0, 0, 0 },
         minwidth = 10,
-        -- maxwidth = 25,
-        maxheight = 5,
-        minheight = 1,
+        minheight = #strAndLen,
         focusable = false,
-        borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
+        -- borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
         col = win_width - stringWidth - 2,
         line = 2,
     })
@@ -75,7 +74,7 @@ function listwindow.createWindowPopup(marks)
         config["relative"] = 'editor'
         config["col"] = win_width - stringWidth - 2
         config["row"] = 1
-        config[ "width" ] = stringWidth + 3
+        config["width"] = stringWidth + 3
         vim.api.nvim_win_set_config(id, config)
     end
 
@@ -87,6 +86,10 @@ function listwindow.createWindowPopup(marks)
     end
 
     return id
+end
+
+function listwindow.CloseWindow()
+    vim.api.nvim_win_close(id, true)
 end
 
 return listwindow
